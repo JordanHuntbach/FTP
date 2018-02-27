@@ -42,7 +42,7 @@ public class Client {
                     System.out.println("Cannot perform operation " + operation + ".");
                     System.out.println("Please connect to a server using the 'CONN' operation.");
                 } else if (operation.equals("")) {
-                    ;
+
                 } else {
                     // Sets up output stream to socket.
                     DataOutputStream dataOutputStream = new DataOutputStream(socket.getOutputStream());

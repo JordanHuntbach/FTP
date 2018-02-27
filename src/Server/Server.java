@@ -11,38 +11,41 @@ public class Server {
     }
 
     private void waitForConnection() {
-        try {
-            // Sets up socket.
-            ServerSocket serverSocket;
-
-            while (true) {
+        // Sets up socket.
+        ServerSocket serverSocket;
+        while (true) {
+            try {
                 // "Wait for connection" state.
                 serverSocket = new ServerSocket(2121);
                 System.out.println("Waiting for connection...");
                 Socket socket = serverSocket.accept();
                 System.out.println("Connection established.");
+                DataInputStream dataInputStream = new DataInputStream(socket.getInputStream());
+                DataOutputStream dataOutputStream = new DataOutputStream(socket.getOutputStream());
                 while (true) {
                     try {
                         System.out.println("Waiting for operation from client...");
-                        DataInputStream dataInputStream = new DataInputStream(socket.getInputStream());
-                        // Gets string representation of the data.
                         String str = dataInputStream.readUTF();
 
                         System.out.println("Operation received: " + str);
-
-                        if (str.equals("QUIT")) {
-                            System.out.println("Client disconnected.\n");
-                            serverSocket.close();
-                            break;
-                        } else {
-                            // Returns messages to the client.
-                            DataOutputStream dataOutputStream = new DataOutputStream(socket.getOutputStream());
-                            dataOutputStream.writeUTF("Operation received: " + str);
-                            dataOutputStream.flush();
-
-                            // Closes socket.
-                            dataOutputStream.close();
-                            System.out.println("Connection Closed\n\n");
+                        switch (str) {
+                            case "QUIT":
+                                System.out.println("Client disconnected.\n");
+                                serverSocket.close();
+                                break;
+                            case "LIST":
+                                break;
+                            case "DELF":
+                                break;
+                            case "UPLD":
+                                break;
+                            case "DWLD":
+                                break;
+                            default:
+                                System.out.println("Command not recognised.");
+                                dataOutputStream.writeUTF("Operation \"" + str + "\" not recognised.");
+                                dataOutputStream.flush();
+                                break;
                         }
                     } catch (EOFException e) {
                         System.out.println("Client disconnected.\n");
@@ -50,10 +53,9 @@ public class Server {
                         break;
                     }
                 }
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-        } catch(Exception e) {
-            e.printStackTrace();
         }
     }
-
 }
