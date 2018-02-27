@@ -5,9 +5,9 @@ import java.net.*;
 import java.util.Scanner;
 
 public class Client {
+    private static int port = 2121;
 
     public static void main(String[] args) {
-        int port = 2121;
 
         // Client attempts connection to server.
         Socket socket = null;
@@ -22,18 +22,18 @@ public class Client {
             try {
                 // "Prompt user for operation" state.
                 Scanner reader = new Scanner(System.in);
-                System.out.print("Enter Operation: ");
+                System.out.print("\nEnter Operation: ");
                 String operation = reader.nextLine();
+
 
                 if (operation.equals("CONN")) {
                     if (socket == null || socket.isClosed()) {
-                        System.out.println("Connecting to server.");
+                        System.out.println("Connecting to server...");
                         try {
                             socket = new Socket("localhost", port);
-                        } catch (IOException e) {
+                            System.out.println("Connected.");
+                        } catch (ConnectException e) {
                             System.out.println("Connection failed. Please try again.");
-                            System.out.print("Error: ");
-                            e.printStackTrace();
                         }
                     } else {
                         System.out.println("Already connected to a server.");
@@ -41,6 +41,8 @@ public class Client {
                 } else if (socket == null || socket.isClosed()) {
                     System.out.println("Cannot perform operation " + operation + ".");
                     System.out.println("Please connect to a server using the 'CONN' operation.");
+                } else if (operation.equals("")) {
+                    ;
                 } else {
                     // Sets up output stream to socket.
                     DataOutputStream dataOutputStream = new DataOutputStream(socket.getOutputStream());
@@ -51,15 +53,29 @@ public class Client {
                     // Closes output stream.
                     dataOutputStream.close();
 
-                    if (operation.equals("QUIT")) {
-                        socket.close();
-                        System.out.println("Connection to server terminated.");
-                    } else {
-                        // Gets result back from server.
-                        DataInputStream dataInputStream = new DataInputStream(socket.getInputStream());
-                        String response = dataInputStream.readUTF();
-                        System.out.println(response);
+                    switch (operation) {
+                        case "QUIT":
+                            socket.close();
+                            System.out.println("Connection to server terminated.");
+                            break;
+                        case "LIST":
+                            break;
+                        case "DELF":
+                            break;
+                        case "UPLD":
+                            break;
+                        case "DWLD":
+                            break;
+                        default:
+                            System.out.println("Not a valid command.");
+                            break;
                     }
+
+//                    // Gets result back from server.
+//                    DataInputStream dataInputStream = new DataInputStream(socket.getInputStream());
+//                    String response = dataInputStream.readUTF();
+//                    System.out.println(response);
+
                 }
             } catch (UnknownHostException e) {
                 System.out.print("UnknownHostException: ");

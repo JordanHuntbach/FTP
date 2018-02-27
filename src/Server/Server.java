@@ -6,7 +6,12 @@ import java.net.*;
 public class Server {
 
     public static void main(String[] args){
-        try{
+        Server server = new Server();
+        server.waitForConnection();
+    }
+
+    private void waitForConnection() {
+        try {
             // Sets up socket.
             ServerSocket serverSocket;
 
@@ -17,31 +22,35 @@ public class Server {
                 Socket socket = serverSocket.accept();
                 System.out.println("Connection established.");
                 while (true) {
-                    System.out.println("Waiting for operation from client...");
-                    DataInputStream dataInputStream = new DataInputStream(socket.getInputStream());
-                    // Gets string representation of the data.
-                    String str = dataInputStream.readUTF();
+                    try {
+                        System.out.println("Waiting for operation from client...");
+                        DataInputStream dataInputStream = new DataInputStream(socket.getInputStream());
+                        // Gets string representation of the data.
+                        String str = dataInputStream.readUTF();
 
-                    System.out.println("Operation received: " + str);
+                        System.out.println("Operation received: " + str);
 
-                    if (str.equals("QUIT")) {
+                        if (str.equals("QUIT")) {
+                            System.out.println("Client disconnected.\n");
+                            serverSocket.close();
+                            break;
+                        } else {
+                            // Returns messages to the client.
+                            DataOutputStream dataOutputStream = new DataOutputStream(socket.getOutputStream());
+                            dataOutputStream.writeUTF("Operation received: " + str);
+                            dataOutputStream.flush();
+
+                            // Closes socket.
+                            dataOutputStream.close();
+                            System.out.println("Connection Closed\n\n");
+                        }
+                    } catch (EOFException e) {
                         System.out.println("Client disconnected.\n");
                         serverSocket.close();
                         break;
-                    } else {
-                        // Returns messages to the client.
-                        DataOutputStream dataOutputStream = new DataOutputStream(socket.getOutputStream());
-                        dataOutputStream.writeUTF("Operation received: " + str);
-                        dataOutputStream.flush();
-
-                        // Closes socket.
-                        dataOutputStream.close();
-                        System.out.println("Connection Closed\n\n");
                     }
                 }
             }
-        } catch (EOFException e) {
-            System.out.print("Server Shutting Down.");
         } catch(Exception e) {
             e.printStackTrace();
         }
