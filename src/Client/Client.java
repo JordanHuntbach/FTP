@@ -2,6 +2,7 @@ package Client;
 
 import java.io.*;
 import java.net.*;
+import java.util.ArrayList;
 import java.util.Scanner;
 
 public class Client {
@@ -12,10 +13,11 @@ public class Client {
         // Client attempts connection to server.
         Socket socket = null;
         try {
+            System.out.println("Connecting to server...");
             socket = new Socket("localhost", port);
+            System.out.println("Connected.");
         } catch (IOException e) {
-            System.out.print("Could not connect to server.");
-            e.printStackTrace();
+            System.out.println("Connection failed. Please try again.");
         }
 
         while (true) {
@@ -50,8 +52,9 @@ public class Client {
                     dataOutputStream.writeUTF(operation);
                     // Sends message from socket.
                     dataOutputStream.flush();
-                    // Closes output stream.
-                    dataOutputStream.close();
+
+                    // Sets up input stream from socket.
+                    DataInputStream dataInputStream = new DataInputStream(socket.getInputStream());
 
                     switch (operation) {
                         case "QUIT":
@@ -59,6 +62,13 @@ public class Client {
                             System.out.println("Connection to server terminated.");
                             break;
                         case "LIST":
+                            int size = dataInputStream.readInt();
+                            System.out.println(size + " files / directories:");
+                            ArrayList<String> files = new ArrayList<>();
+                            for (int i = 0; i < size; i++) {
+                                files.add(dataInputStream.readUTF());
+                            }
+                            System.out.println(files.toString());
                             break;
                         case "DELF":
                             break;
@@ -70,12 +80,6 @@ public class Client {
                             System.out.println("Not a valid command.");
                             break;
                     }
-
-//                    // Gets result back from server.
-//                    DataInputStream dataInputStream = new DataInputStream(socket.getInputStream());
-//                    String response = dataInputStream.readUTF();
-//                    System.out.println(response);
-
                 }
             } catch (UnknownHostException e) {
                 System.out.print("UnknownHostException: ");
