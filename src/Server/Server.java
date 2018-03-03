@@ -39,11 +39,13 @@ public class Server {
                                 list(dataOutputStream);
                                 break;
                             case "DELF":
+                                delete(dataInputStream, dataOutputStream);
                                 break;
                             case "UPLD":
                                 upload(dataInputStream, dataOutputStream);
                                 break;
                             case "DWLD":
+                                download(dataInputStream, dataOutputStream);
                                 break;
                             default:
                                 System.out.println("Command not recognised.");
@@ -51,7 +53,7 @@ public class Server {
                                 dataOutputStream.flush();
                                 break;
                         }
-                    } catch (EOFException e) {
+                    } catch (SocketException | EOFException e) {
                         System.out.println("Client disconnected.\n");
                         serverSocket.close();
                         break;
@@ -62,6 +64,35 @@ public class Server {
             } catch (IOException e) {
                 e.printStackTrace();
             }
+        }
+    }
+
+    private void delete(DataInputStream inputStream, DataOutputStream outputStream) throws IOException{
+        short filename_size = inputStream.readShort();
+        String filename = inputStream.readUTF();
+        File file = new File("./src/Server/" + filename);
+        if (file.exists()) {
+            System.out.println("File " + filename + " exists.");
+            outputStream.writeInt(1);
+            outputStream.flush();
+            boolean confirm = inputStream.readUTF().equals("Yes");
+            if (confirm) {
+                String response;
+                if(file.delete()) {
+                    response = "File deleted successfully.";
+                } else {
+                    response = "Failed to delete the file.";
+                }
+                System.out.println(response);
+                outputStream.writeUTF(response);
+                outputStream.flush();
+            } else {
+                System.out.println("Delete abandoned by client.");
+            }
+        } else {
+            System.out.println("File " + filename + " doesn't exist.");
+            outputStream.writeInt(-1);
+            outputStream.flush();
         }
     }
 
@@ -106,6 +137,32 @@ public class Server {
             String results = number_of_bytes + " bytes received in " + time + " seconds.";
             System.out.println(results);
             outputStream.writeUTF(results);
+            outputStream.flush();
+        }
+    }
+
+    private void download(DataInputStream inputStream, DataOutputStream outputStream) throws IOException {
+        short filename_size = inputStream.readShort();
+        String filename = inputStream.readUTF();
+        try {
+            FileInputStream in = new FileInputStream("./src/Server/" + filename);
+            System.out.println("Sending File: " + filename);
+            ArrayList<Integer> bytes = new ArrayList<>();
+            int b;
+            while ((b = in.read()) != -1) {
+                bytes.add(b);
+            }
+            in.close();
+            int file_size = bytes.size();
+            outputStream.writeInt(file_size);
+            outputStream.flush();
+            for (int send : bytes) {
+                outputStream.writeInt(send);
+            }
+            outputStream.flush();
+        } catch (FileNotFoundException e) {
+            System.out.print("Could not find file " + filename + "\n");
+            outputStream.writeInt(-1);
             outputStream.flush();
         }
     }

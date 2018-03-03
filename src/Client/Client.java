@@ -1,12 +1,7 @@
 package Client;
 
 import java.io.*;
-
-import java.net.ConnectException;
-import java.net.Socket;
-import java.net.SocketException;
-import java.net.UnknownHostException;
-
+import java.net.*;
 import java.util.ArrayList;
 import java.util.Scanner;
 
@@ -75,18 +70,20 @@ public class Client {
                             list(dataInputStream);
                             break;
                         case "DELF":
+                            delete(reader, dataOutputStream, dataInputStream);
                             break;
                         case "UPLD":
                             upload(reader, dataOutputStream, dataInputStream);
                             break;
                         case "DWLD":
+                            download(reader, dataOutputStream, dataInputStream);
                             break;
                         default:
                             System.out.println("Not a valid command.");
                             break;
                     }
                 }
-            } catch (SocketException e) {
+            } catch (SocketException | EOFException e) {
                 try {
                     if (socket != null) {
                         socket.close();
@@ -117,6 +114,35 @@ public class Client {
         System.out.println(files.toString());
     }
 
+    private void delete(Scanner reader, DataOutputStream dataOutputStream, DataInputStream dataInputStream) throws IOException {
+        System.out.print("\nEnter filename to delete: ");
+        String filename = reader.nextLine();
+        short length = (short) filename.length();
+        dataOutputStream.writeShort(length);
+        dataOutputStream.writeUTF(filename);
+        boolean exists = dataInputStream.readInt() == 1;
+        if (exists) {
+            String check = "Are you sure you want to delete the file '" + filename + "'? (Yes/No)";
+            System.out.println(check);
+            String input = reader.nextLine().toLowerCase();
+            while (!input.equals("yes") && !input.equals("y") && !input.equals("no") && !input.equals("n")) {
+                System.out.println(check);
+                input = reader.nextLine().toLowerCase();
+            }
+            if (input.equals("yes") || input.equals("y")) {
+                dataOutputStream.writeUTF("Yes");
+                dataOutputStream.flush();
+                System.out.println(dataInputStream.readUTF());
+            } else {
+                System.out.println("Delete of file '" + filename + "' abandoned.");
+                dataOutputStream.writeUTF("No");
+                dataOutputStream.flush();
+            }
+        } else {
+            System.out.println("File " + filename + " does not exist on the server.");
+        }
+    }
+
     private void upload(Scanner reader, DataOutputStream dataOutputStream, DataInputStream dataInputStream) throws IOException {
         System.out.print("\nEnter Filename: ");
         String filename = reader.nextLine();
@@ -134,8 +160,10 @@ public class Client {
             in.close();
             boolean ready = dataInputStream.readUTF().equals("READY");
             if (ready) {
+                System.out.println("Uploading...");
                 int file_size = bytes.size();
                 dataOutputStream.writeInt(file_size);
+                dataOutputStream.flush();
                 for (int send : bytes) {
                     dataOutputStream.writeInt(send);
                 }
@@ -151,4 +179,31 @@ public class Client {
         }
     }
 
+    private void download(Scanner reader, DataOutputStream dataOutputStream, DataInputStream dataInputStream) throws IOException {
+        System.out.print("\nEnter Filename: ");
+        String filename = reader.nextLine();
+        short length = (short) filename.length();
+        dataOutputStream.writeShort(length);
+        dataOutputStream.writeUTF(filename);
+        dataOutputStream.flush();
+        int file_size = dataInputStream.readInt();
+        if (file_size == -1) {
+            System.out.println("File " + filename + " does not exist on the server.\n");
+        } else {
+            System.out.println("Downloading...");
+            FileOutputStream out = new FileOutputStream("./src/Client/" + filename);
+
+            long startTime = System.currentTimeMillis();
+            for (int i = 0; i < file_size; i++) {
+                out.write(dataInputStream.readInt());
+            }
+            long endTime = System.currentTimeMillis();
+
+            out.close();
+            long duration = (endTime - startTime);
+            float time = (float) (duration / 1000.0);
+            String results = file_size + " bytes received in " + time + " seconds.";
+            System.out.println(results);
+        }
+    }
 }
