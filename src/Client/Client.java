@@ -32,8 +32,8 @@ public class Client {
                 System.out.print("\nEnter Operation: ");
                 String operation = reader.nextLine();
 
-
                 if (operation.equals("CONN")) {
+                    // Attempts connection to server, if not already connected.
                     if (socket == null || socket.isClosed()) {
                         System.out.println("Connecting to server...");
                         try {
@@ -46,10 +46,11 @@ public class Client {
                         System.out.println("Already connected to a server.");
                     }
                 } else if (socket == null || socket.isClosed()) {
+                    // These lines are printed if the client is not connected to a server, and a command other than 'CONN' is entered.
                     System.out.println("Cannot perform operation " + operation + ".");
                     System.out.println("Please connect to a server using the 'CONN' operation.");
                 } else if (operation.equals("")) {
-
+                    // Do nothing if the operation is empty.
                 } else {
                     // Sets up output stream to socket.
                     DataOutputStream dataOutputStream = new DataOutputStream(socket.getOutputStream());
@@ -84,7 +85,9 @@ public class Client {
                     }
                 }
             } catch (SocketException | EOFException e) {
+                // These exceptions are thrown if the connection is dropped by the server.
                 try {
+                    // Ensure the socket is closed, so that a new connection can be established.
                     if (socket != null) {
                         socket.close();
                     }
@@ -144,37 +147,57 @@ public class Client {
     }
 
     private void upload(Scanner reader, DataOutputStream dataOutputStream, DataInputStream dataInputStream) throws IOException {
+        // Prompts user for a filename.
         System.out.print("\nEnter Filename: ");
         String filename = reader.nextLine();
+
         try {
+            // This throws and exception if the file does not exist.
             FileInputStream in = new FileInputStream("./src/Client/" + filename);
+
+            // Client sends the length of the file name which will be sent (short int)..
             short length = (short) filename.length();
             dataOutputStream.writeShort(length);
+
+            // ..followed by the file_name (character string).
             dataOutputStream.writeChars(filename);
             dataOutputStream.flush();
+
+            // Store each byte from the file in an array list.
             ArrayList<Integer> bytes = new ArrayList<>();
             int b;
             while ((b = in.read()) != -1) {
                 bytes.add(b);
             }
             in.close();
+
+            // When the server acknowledges it is ready..
             boolean ready = dataInputStream.readUTF().equals("READY");
             if (ready) {
                 System.out.println("Uploading...");
+
+                // .. the client sends the size of the file.
                 int file_size = bytes.size();
                 dataOutputStream.writeInt(file_size);
                 dataOutputStream.flush();
+
+                // Client sends file to server.
                 for (int send : bytes) {
                     dataOutputStream.writeInt(send);
                 }
                 dataOutputStream.flush();
+
+                // Processing information is used by the client to inform the user that the transfer was successful.
                 String response = dataInputStream.readUTF();
                 System.out.println("Server says: " + response);
+
+                // Client returns to the "prompt user for operation" state.
             } else {
                 System.out.print("Error");
             }
 
         } catch (FileNotFoundException e) {
+            // This catches the exception thrown if the file does not exist.
             System.out.print("Could not find file " + filename + "\n");
         }
     }

@@ -21,15 +21,22 @@ public class Server {
                 System.out.println("Waiting for connection...");
                 Socket socket = serverSocket.accept();
                 System.out.println("Connection established.");
+
+                // Prevents other clients connecting to the server - they would just hang while the server processes the first client.
                 serverSocket.close();
+
+                // Sets up input / output streams.
                 DataInputStream dataInputStream = new DataInputStream(socket.getInputStream());
                 DataOutputStream dataOutputStream = new DataOutputStream(socket.getOutputStream());
+
+                // Until the client disconnects, the server will handle its operations in this loop.
                 while (true) {
                     try {
+                        // "Waiting for operation from client" state.
                         System.out.println("\nWaiting for operation from client...");
                         String str = dataInputStream.readUTF();
-
                         System.out.println("Operation received: " + str);
+
                         switch (str) {
                             case "QUIT":
                                 System.out.println("Client disconnected.\n");
@@ -48,9 +55,7 @@ public class Server {
                                 download(dataInputStream, dataOutputStream);
                                 break;
                             default:
-                                System.out.println("Command not recognised.");
-                                dataOutputStream.writeUTF("Operation \"" + str + "\" not recognised.");
-                                dataOutputStream.flush();
+                                System.out.println("Operation \"" + str + "\" not recognised.");
                                 break;
                         }
                     } catch (SocketException | EOFException e) {
@@ -117,15 +122,23 @@ public class Server {
     }
 
     private void upload(DataInputStream inputStream, DataOutputStream outputStream) throws IOException {
+
+        // Server receives the information, decodes file name size and file name...
         short filename_size = inputStream.readShort();
         StringBuilder filename = new StringBuilder();
         for (int i = 0; i < filename_size; i++) {
             filename.append(inputStream.readChar());
         }
+
+        // ..and acknowledges that it is ready to receive.
         outputStream.writeUTF("READY");
         outputStream.flush();
         System.out.println("Receiving " + filename + "...");
+
+        // Server receives and decodes the file size.
         int number_of_bytes = inputStream.readInt();
+
+        // Server enters a loop to receive file (timing the duration of the upload).
         ArrayList<Integer> bytes = new ArrayList<>();
         long startTime = System.currentTimeMillis();
         for (int i = 0; i < number_of_bytes; i++) {
@@ -134,16 +147,23 @@ public class Server {
         long endTime = System.currentTimeMillis();
         long duration = (endTime - startTime);
         float time = (float) (duration / 1000.0);
+
+        // Server computes the transfer process result (such as how many bytes received, processing time etc.)
         String results = number_of_bytes + " bytes received in " + time + " seconds.";
         System.out.println(results);
+
+        // The server sends the transfer process results to the client.
         outputStream.writeUTF(results);
         outputStream.flush();
 
+        // Write the file to disk.
         FileOutputStream out = new FileOutputStream("./src/Server/" + filename);
         for (int num : bytes) {
             out.write(num);
         }
         out.close();
+
+        // Return to "wait for operation" state.
     }
 
     private void download(DataInputStream inputStream, DataOutputStream outputStream) throws IOException {
