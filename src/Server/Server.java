@@ -1,7 +1,5 @@
 package Server;
 
-import com.sun.xml.internal.ws.policy.privateutil.PolicyUtils;
-
 import java.io.*;
 import java.net.*;
 import java.util.ArrayList;
@@ -23,6 +21,7 @@ public class Server {
                 System.out.println("Waiting for connection...");
                 Socket socket = serverSocket.accept();
                 System.out.println("Connection established.");
+                serverSocket.close();
                 DataInputStream dataInputStream = new DataInputStream(socket.getInputStream());
                 DataOutputStream dataOutputStream = new DataOutputStream(socket.getOutputStream());
                 while (true) {
@@ -42,6 +41,7 @@ public class Server {
                             case "DELF":
                                 break;
                             case "UPLD":
+                                upload(dataInputStream, dataOutputStream);
                                 break;
                             case "DWLD":
                                 break;
@@ -73,12 +73,40 @@ public class Server {
         int size = listOfFiles.length;
         outputStream.writeInt(size);
 
-        System.out.println(size + " files /directories found.");
+        System.out.println(size + " files/directories found.");
         for (File file : listOfFiles) {
             System.out.println(file.getName());
             String name = file.getName();
             outputStream.writeUTF(name);
         }
         outputStream.flush();
+    }
+
+    private void upload(DataInputStream inputStream, DataOutputStream outputStream) throws IOException {
+        short filename_size = inputStream.readShort();
+        String filename = inputStream.readUTF();
+        if (filename.length() != filename_size) {
+            outputStream.writeUTF("ERROR");
+            outputStream.flush();
+        } else {
+            outputStream.writeUTF("READY");
+            outputStream.flush();
+            int number_of_bytes = inputStream.readInt();
+            FileOutputStream out = new FileOutputStream("./src/Server/" + filename);
+
+            long startTime = System.currentTimeMillis();
+            for (int i = 0; i < number_of_bytes; i++) {
+                out.write(inputStream.readInt());
+            }
+            long endTime = System.currentTimeMillis();
+
+            out.close();
+            long duration = (endTime - startTime);
+            float time = (float) (duration / 1000.0);
+            String results = number_of_bytes + " bytes received in " + time + " seconds.";
+            System.out.println(results);
+            outputStream.writeUTF(results);
+            outputStream.flush();
+        }
     }
 }

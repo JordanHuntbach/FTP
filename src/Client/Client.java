@@ -1,7 +1,12 @@
 package Client;
 
 import java.io.*;
-import java.net.*;
+
+import java.net.ConnectException;
+import java.net.Socket;
+import java.net.SocketException;
+import java.net.UnknownHostException;
+
 import java.util.ArrayList;
 import java.util.Scanner;
 
@@ -9,8 +14,9 @@ public class Client {
     private static int port = 2121;
 
     public static void main(String[] args) {
+        Client client = new Client();
 
-        // Client attempts connection to server.
+        // Client attempts initial connection to server.
         Socket socket = null;
         try {
             System.out.println("Connecting to server...");
@@ -20,6 +26,10 @@ public class Client {
             System.out.println("Connection failed. Please try again.");
         }
 
+        client.waitForInput(socket);
+    }
+
+    private void waitForInput(Socket socket) {
         while (true) {
             try {
                 // "Prompt user for operation" state.
@@ -62,17 +72,12 @@ public class Client {
                             System.out.println("Connection to server terminated.");
                             break;
                         case "LIST":
-                            int size = dataInputStream.readInt();
-                            System.out.println(size + " files / directories:");
-                            ArrayList<String> files = new ArrayList<>();
-                            for (int i = 0; i < size; i++) {
-                                files.add(dataInputStream.readUTF());
-                            }
-                            System.out.println(files.toString());
+                            list(dataInputStream);
                             break;
                         case "DELF":
                             break;
                         case "UPLD":
+                            upload(reader, dataOutputStream, dataInputStream);
                             break;
                         case "DWLD":
                             break;
@@ -81,6 +86,17 @@ public class Client {
                             break;
                     }
                 }
+            } catch (SocketException e) {
+                try {
+                    if (socket != null) {
+                        socket.close();
+                    }
+                } catch (IOException exception) {
+                    System.out.print("Exception: ");
+                    exception.printStackTrace();
+                }
+                System.out.println("Server has disconnected..");
+                System.out.println("Please reconnect using the 'CONN' operation.");
             } catch (UnknownHostException e) {
                 System.out.print("UnknownHostException: ");
                 e.printStackTrace();
@@ -88,6 +104,50 @@ public class Client {
                 System.out.print("IOException: ");
                 e.printStackTrace();
             }
+        }
+    }
+
+    private void list(DataInputStream inputStream) throws IOException {
+        int size = inputStream.readInt();
+        System.out.println(size + " files / directories:");
+        ArrayList<String> files = new ArrayList<>();
+        for (int i = 0; i < size; i++) {
+            files.add(inputStream.readUTF());
+        }
+        System.out.println(files.toString());
+    }
+
+    private void upload(Scanner reader, DataOutputStream dataOutputStream, DataInputStream dataInputStream) throws IOException {
+        System.out.print("\nEnter Filename: ");
+        String filename = reader.nextLine();
+        try {
+            FileInputStream in = new FileInputStream("./src/Client/" + filename);
+            short length = (short) filename.length();
+            dataOutputStream.writeShort(length);
+            dataOutputStream.writeUTF(filename);
+            dataOutputStream.flush();
+            ArrayList<Integer> bytes = new ArrayList<>();
+            int b;
+            while ((b = in.read()) != -1) {
+                bytes.add(b);
+            }
+            in.close();
+            boolean ready = dataInputStream.readUTF().equals("READY");
+            if (ready) {
+                int file_size = bytes.size();
+                dataOutputStream.writeInt(file_size);
+                for (int send : bytes) {
+                    dataOutputStream.writeInt(send);
+                }
+                dataOutputStream.flush();
+                String response = dataInputStream.readUTF();
+                System.out.println("Server says: " + response);
+            } else {
+                System.out.print("Error");
+            }
+
+        } catch (FileNotFoundException e) {
+            System.out.print("Could not find file " + filename + "\n");
         }
     }
 
