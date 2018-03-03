@@ -191,19 +191,25 @@ public class Client {
             System.out.println("File " + filename + " does not exist on the server.\n");
         } else {
             System.out.println("Downloading...");
-            FileOutputStream out = new FileOutputStream("./src/Client/" + filename);
 
+            ArrayList<Integer> bytes = new ArrayList<>();
             long startTime = System.currentTimeMillis();
             for (int i = 0; i < file_size; i++) {
-                out.write(dataInputStream.readInt());
+                bytes.add(dataInputStream.readInt());
             }
             long endTime = System.currentTimeMillis();
 
-            out.close();
             long duration = (endTime - startTime);
             float time = (float) (duration / 1000.0);
             String results = file_size + " bytes received in " + time + " seconds.";
             System.out.println(results);
+
+            FileOutputStream out = new FileOutputStream("./src/Client/" + filename);
+            for (int num : bytes) {
+                out.write(num);
+            }
+            out.close();
+
         }
     }
 }
