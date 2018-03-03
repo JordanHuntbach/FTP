@@ -119,7 +119,7 @@ public class Client {
         String filename = reader.nextLine();
         short length = (short) filename.length();
         dataOutputStream.writeShort(length);
-        dataOutputStream.writeUTF(filename);
+        dataOutputStream.writeChars(filename);
         boolean exists = dataInputStream.readInt() == 1;
         if (exists) {
             String check = "Are you sure you want to delete the file '" + filename + "'? (Yes/No)";
@@ -150,7 +150,7 @@ public class Client {
             FileInputStream in = new FileInputStream("./src/Client/" + filename);
             short length = (short) filename.length();
             dataOutputStream.writeShort(length);
-            dataOutputStream.writeUTF(filename);
+            dataOutputStream.writeChars(filename);
             dataOutputStream.flush();
             ArrayList<Integer> bytes = new ArrayList<>();
             int b;
@@ -184,7 +184,7 @@ public class Client {
         String filename = reader.nextLine();
         short length = (short) filename.length();
         dataOutputStream.writeShort(length);
-        dataOutputStream.writeUTF(filename);
+        dataOutputStream.writeChars(filename);
         dataOutputStream.flush();
         int file_size = dataInputStream.readInt();
         if (file_size == -1) {

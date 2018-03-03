@@ -69,7 +69,10 @@ public class Server {
 
     private void delete(DataInputStream inputStream, DataOutputStream outputStream) throws IOException{
         short filename_size = inputStream.readShort();
-        String filename = inputStream.readUTF();
+        StringBuilder filename = new StringBuilder();
+        for (int i = 0; i < filename_size; i++) {
+            filename.append(inputStream.readChar());
+        }
         File file = new File("./src/Server/" + filename);
         if (file.exists()) {
             System.out.println("File " + filename + " exists.");
@@ -115,39 +118,40 @@ public class Server {
 
     private void upload(DataInputStream inputStream, DataOutputStream outputStream) throws IOException {
         short filename_size = inputStream.readShort();
-        String filename = inputStream.readUTF();
-        if (filename.length() != filename_size) {
-            outputStream.writeUTF("ERROR");
-            outputStream.flush();
-        } else {
-            outputStream.writeUTF("READY");
-            outputStream.flush();
-            int number_of_bytes = inputStream.readInt();
-
-            ArrayList<Integer> bytes = new ArrayList<>();
-            long startTime = System.currentTimeMillis();
-            for (int i = 0; i < number_of_bytes; i++) {
-                bytes.add(inputStream.readInt());
-            }
-            long endTime = System.currentTimeMillis();
-            long duration = (endTime - startTime);
-            float time = (float) (duration / 1000.0);
-            String results = number_of_bytes + " bytes received in " + time + " seconds.";
-            System.out.println(results);
-            outputStream.writeUTF(results);
-            outputStream.flush();
-
-            FileOutputStream out = new FileOutputStream("./src/Server/" + filename);
-            for (int num : bytes) {
-                out.write(num);
-            }
-            out.close();
+        StringBuilder filename = new StringBuilder();
+        for (int i = 0; i < filename_size; i++) {
+            filename.append(inputStream.readChar());
         }
+        outputStream.writeUTF("READY");
+        outputStream.flush();
+        System.out.println("Receiving " + filename + "...");
+        int number_of_bytes = inputStream.readInt();
+        ArrayList<Integer> bytes = new ArrayList<>();
+        long startTime = System.currentTimeMillis();
+        for (int i = 0; i < number_of_bytes; i++) {
+            bytes.add(inputStream.readInt());
+        }
+        long endTime = System.currentTimeMillis();
+        long duration = (endTime - startTime);
+        float time = (float) (duration / 1000.0);
+        String results = number_of_bytes + " bytes received in " + time + " seconds.";
+        System.out.println(results);
+        outputStream.writeUTF(results);
+        outputStream.flush();
+
+        FileOutputStream out = new FileOutputStream("./src/Server/" + filename);
+        for (int num : bytes) {
+            out.write(num);
+        }
+        out.close();
     }
 
     private void download(DataInputStream inputStream, DataOutputStream outputStream) throws IOException {
         short filename_size = inputStream.readShort();
-        String filename = inputStream.readUTF();
+        StringBuilder filename = new StringBuilder();
+        for (int i = 0; i < filename_size; i++) {
+            filename.append(inputStream.readChar());
+        }
         try {
             FileInputStream in = new FileInputStream("./src/Server/" + filename);
             System.out.println("Sending File: " + filename);
