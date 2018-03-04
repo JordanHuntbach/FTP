@@ -121,13 +121,19 @@ public class Client {
     }
 
     private void delete(Scanner reader, DataOutputStream dataOutputStream, DataInputStream dataInputStream) throws IOException {
+        // Prompts user for a filename.
         System.out.print("\nEnter filename to delete: ");
         String filename = reader.nextLine();
+
+        // Client sends the length of the file name (short int) followed by the file name (character string).
         short length = (short) filename.length();
         dataOutputStream.writeShort(length);
         dataOutputStream.writeChars(filename);
+
+        // Client receives the confirm from the server.
         boolean exists = dataInputStream.readInt() == 1;
         if (exists) {
+            // If the confirm is positive, the must confirm if they wants to delete the file.
             String check = "Are you sure you want to delete the file '" + filename + "'? (Yes/No)";
             System.out.println(check);
             String input = reader.nextLine().toLowerCase();
@@ -136,16 +142,25 @@ public class Client {
                 input = reader.nextLine().toLowerCase();
             }
             if (input.equals("yes") || input.equals("y")) {
+                // If the user's confirm is "Yes"..
                 dataOutputStream.writeUTF("Yes");
                 dataOutputStream.flush();
+
+                // ..the client waits for the server to send the confirm of file deletion.
                 System.out.println(dataInputStream.readUTF());
             } else {
+                // If the user's confirm is "No", the client prints out "Delete abandoned by the user!"..
                 System.out.println("Delete of file '" + filename + "' abandoned.");
                 dataOutputStream.writeUTF("No");
                 dataOutputStream.flush();
+
+                // ..and returns to "prompt user for operation" state.
             }
         } else {
+            // If the confirm is negative, print out “The file does not exist on server”..
             System.out.println("File " + filename + " does not exist on the server.");
+
+            // ..and return to the "prompt user for operation" state.
         }
     }
 

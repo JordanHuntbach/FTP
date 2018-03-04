@@ -83,25 +83,32 @@ public class Server {
         // ..and checks to see if the file exists in its local directory.
         File file = new File("./src/Server/" + filename);
         if (file.exists()) {
+            // If the file exists, the server sends a positive confirm (integer value 1) back to the client.
             System.out.println("File " + filename + " exists.");
             outputStream.writeInt(1);
             outputStream.flush();
+
+            // The server waits for the delete confirm sent by the client.
             boolean confirm = inputStream.readUTF().equals("Yes");
             if (confirm) {
+                // If the confirm is "Yes", the server deletes the requested file..
                 String response;
                 if(file.delete()) {
                     response = "File deleted successfully.";
                 } else {
                     response = "Failed to delete the file.";
                 }
+
+                // ..and returns an acknowledgement to the client to indicate the success or failure of file deletion operation.
                 System.out.println(response);
                 outputStream.writeUTF(response);
                 outputStream.flush();
             } else {
+                // If the confirm is "No", the server returns to "wait for operation from client" state.
                 System.out.println("Delete abandoned by client.");
             }
         } else {
-            // If the file does not exist, server will return a negative 1 (32-bit int).
+            // If the file does not exit, the server sends a negative confirm (integer value -1) back to the client.
             System.out.println("File " + filename + " doesn't exist.");
             outputStream.writeInt(-1);
             outputStream.flush();
