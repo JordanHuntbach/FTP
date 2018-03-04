@@ -108,8 +108,11 @@ public class Client {
     }
 
     private void list(DataInputStream inputStream) throws IOException {
+        // Client receives the size of the directory listing..
         int size = inputStream.readInt();
         System.out.println(size + " files / directories:");
+
+        // ..and goes into a loop to read directory listing.
         ArrayList<String> files = new ArrayList<>();
         for (int i = 0; i < size; i++) {
             files.add(inputStream.readUTF());
@@ -203,18 +206,28 @@ public class Client {
     }
 
     private void download(Scanner reader, DataOutputStream dataOutputStream, DataInputStream dataInputStream) throws IOException {
+        // Prompts user for a filename.
         System.out.print("\nEnter Filename: ");
         String filename = reader.nextLine();
+
+        // Client sends the length of the file name (short int) followed by the file name (character string).
         short length = (short) filename.length();
         dataOutputStream.writeShort(length);
         dataOutputStream.writeChars(filename);
         dataOutputStream.flush();
+
+        // Client receives 32-bit file length from server.
         int file_size = dataInputStream.readInt();
+
         if (file_size == -1) {
+            // If the value is negative 1, the user should be informed that the file does not exist on the server.
             System.out.println("File " + filename + " does not exist on the server.\n");
+
+            // Client returns to "prompt user for operation" state.
         } else {
             System.out.println("Downloading...");
 
+            // Client reads "file size" bytes from server, and times the download.
             ArrayList<Integer> bytes = new ArrayList<>();
             long startTime = System.currentTimeMillis();
             for (int i = 0; i < file_size; i++) {
@@ -222,11 +235,13 @@ public class Client {
             }
             long endTime = System.currentTimeMillis();
 
+            // Once the transfer completes successfully, display the transfer processing information.
             long duration = (endTime - startTime);
             float time = (float) (duration / 1000.0);
             String results = file_size + " bytes received in " + time + " seconds.";
             System.out.println(results);
 
+            // The client saves the file to disk as "file name".
             FileOutputStream out = new FileOutputStream("./src/Client/" + filename);
             for (int num : bytes) {
                 out.write(num);

@@ -73,11 +73,14 @@ public class Server {
     }
 
     private void delete(DataInputStream inputStream, DataOutputStream outputStream) throws IOException{
+        // Server decodes what it receives..
         short filename_size = inputStream.readShort();
         StringBuilder filename = new StringBuilder();
         for (int i = 0; i < filename_size; i++) {
             filename.append(inputStream.readChar());
         }
+
+        // ..and checks to see if the file exists in its local directory.
         File file = new File("./src/Server/" + filename);
         if (file.exists()) {
             System.out.println("File " + filename + " exists.");
@@ -98,21 +101,29 @@ public class Server {
                 System.out.println("Delete abandoned by client.");
             }
         } else {
+            // If the file does not exist, server will return a negative 1 (32-bit int).
             System.out.println("File " + filename + " doesn't exist.");
             outputStream.writeInt(-1);
             outputStream.flush();
+
+            // After that, the server returns to the "wait for operation from client" state.
         }
     }
 
     private void list(DataOutputStream outputStream) throws IOException {
+        // Server obtains listing of it’s directories/files.
         File folder = new File("./src/Server/");
         File[] listOfFiles = folder.listFiles();
         assert listOfFiles != null;
 
+        // Server computes the size of directory listing..
         int size = listOfFiles.length;
+        // ..and sends the size to client as a 32 bit int.
         outputStream.writeInt(size);
 
         System.out.println(size + " files/directories found.");
+
+        // Server sends file names to client.
         for (File file : listOfFiles) {
             System.out.println(file.getName());
             String name = file.getName();
@@ -167,31 +178,44 @@ public class Server {
     }
 
     private void download(DataInputStream inputStream, DataOutputStream outputStream) throws IOException {
+        //Server decodes what it receives..
         short filename_size = inputStream.readShort();
         StringBuilder filename = new StringBuilder();
         for (int i = 0; i < filename_size; i++) {
             filename.append(inputStream.readChar());
         }
         try {
+            // ..and checks to see if the file exists in its local directory.
             FileInputStream in = new FileInputStream("./src/Server/" + filename);
+
             System.out.println("Sending File: " + filename);
+
+            // Read the file, and store the bytes in an array.
             ArrayList<Integer> bytes = new ArrayList<>();
             int b;
             while ((b = in.read()) != -1) {
                 bytes.add(b);
             }
             in.close();
+
+            // Server returns the size of the file to the client as a 32-bit int.
             int file_size = bytes.size();
             outputStream.writeInt(file_size);
             outputStream.flush();
+
+            // Server sends the file to client.
             for (int send : bytes) {
                 outputStream.writeInt(send);
             }
             outputStream.flush();
+
         } catch (FileNotFoundException e) {
+            // If the file does not exist, server will return a negative 1 (32-bit int).
             System.out.print("Could not find file " + filename + "\n");
             outputStream.writeInt(-1);
             outputStream.flush();
+
+            // After that, the server should return to the "wait for operation from client" state.
         }
     }
 }
