@@ -173,7 +173,8 @@ public class Client {
 
         try {
             // This throws an exception if the file does not exist.
-            FileInputStream in = new FileInputStream("./src/Client/Files/" + filename);
+            File file = new File("./src/Client/Files/" + filename);
+            FileInputStream in = new FileInputStream(file);
 
             // Client sends the length of the file name which will be sent (short int)..
             short length = (short) filename.length();
@@ -183,12 +184,10 @@ public class Client {
             dataOutputStream.writeChars(filename);
             dataOutputStream.flush();
 
-            // Store each byte from the file in an array list.
-            ArrayList<Integer> bytes = new ArrayList<>();
-            int b;
-            while ((b = in.read()) != -1) {
-                bytes.add(b);
-            }
+            // Store each byte from the file in an array.
+            int file_size = (int) file.length();
+            byte[] bytes = new byte[file_size];
+            in.read(bytes);
             in.close();
 
             // When the server acknowledges it is ready..
@@ -197,14 +196,11 @@ public class Client {
                 System.out.println("Uploading...");
 
                 // .. the client sends the size of the file.
-                int file_size = bytes.size();
                 dataOutputStream.writeInt(file_size);
                 dataOutputStream.flush();
 
                 // Client sends file to server.
-                for (int send : bytes) {
-                    dataOutputStream.writeInt(send);
-                }
+                dataOutputStream.write(bytes);
                 dataOutputStream.flush();
 
                 // Processing information is used by the client to inform the user that the transfer was successful.
@@ -245,10 +241,12 @@ public class Client {
             System.out.println("Downloading...");
 
             // Client reads "file size" bytes from server, and times the download.
-            ArrayList<Integer> bytes = new ArrayList<>();
+            byte[] bytes = new byte[file_size];
+            int byteCounter = 0;
             long startTime = System.currentTimeMillis();
-            for (int i = 0; i < file_size; i++) {
-                bytes.add(dataInputStream.readInt());
+            while(byteCounter < file_size) {
+                int numBytesRead = dataInputStream.read(bytes, byteCounter, file_size - byteCounter);
+                byteCounter += numBytesRead;
             }
             long endTime = System.currentTimeMillis();
 
@@ -260,9 +258,7 @@ public class Client {
 
             // The client saves the file to disk as "file name".
             FileOutputStream out = new FileOutputStream("./src/Client/Files/" + filename);
-            for (int num : bytes) {
-                out.write(num);
-            }
+            out.write(bytes);
             out.close();
 
         }

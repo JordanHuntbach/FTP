@@ -2,7 +2,6 @@ package Server;
 
 import java.io.*;
 import java.net.*;
-import java.util.ArrayList;
 import java.util.Scanner;
 
 public class Server {
@@ -88,7 +87,7 @@ public class Server {
                 System.out.print("Connected to port: " + port + "\n");
                 serverSocket.close();
                 return;
-            } catch (IOException e) {
+            } catch (IOException | IllegalArgumentException e) {
                 System.out.print("Cannot bind to port number: " + port);
             }
         }
@@ -179,10 +178,12 @@ public class Server {
         int number_of_bytes = inputStream.readInt();
 
         // Server enters a loop to receive file (timing the duration of the upload).
-        ArrayList<Integer> bytes = new ArrayList<>();
+        byte[] bytes = new byte[number_of_bytes];
+        int byteCounter = 0;
         long startTime = System.currentTimeMillis();
-        for (int i = 0; i < number_of_bytes; i++) {
-            bytes.add(inputStream.readInt());
+        while(byteCounter < number_of_bytes) {
+            int numBytesRead = inputStream.read(bytes, byteCounter, number_of_bytes - byteCounter);
+            byteCounter += numBytesRead;
         }
         long endTime = System.currentTimeMillis();
         long duration = (endTime - startTime);
@@ -198,9 +199,7 @@ public class Server {
 
         // Write the file to disk.
         FileOutputStream out = new FileOutputStream("./src/Server/Files/" + filename);
-        for (int num : bytes) {
-            out.write(num);
-        }
+        out.write(bytes);
         out.close();
 
         // Return to "wait for operation" state.
@@ -215,27 +214,23 @@ public class Server {
         }
         try {
             // ..and checks to see if the file exists in its local directory.
-            FileInputStream in = new FileInputStream("./src/Server/Files/" + filename);
+            File file = new File("./src/Server/Files/" + filename);
+            FileInputStream in = new FileInputStream(file);
 
             System.out.println("Sending File: " + filename);
 
-            // Read the file, and store the bytes in an array.
-            ArrayList<Integer> bytes = new ArrayList<>();
-            int b;
-            while ((b = in.read()) != -1) {
-                bytes.add(b);
-            }
+            // Store each byte from the file in an array.
+            int file_size = (int) file.length();
+            byte[] bytes = new byte[file_size];
+            in.read(bytes);
             in.close();
 
             // Server returns the size of the file to the client as a 32-bit int.
-            int file_size = bytes.size();
             outputStream.writeInt(file_size);
             outputStream.flush();
 
             // Server sends the file to client.
-            for (int send : bytes) {
-                outputStream.writeInt(send);
-            }
+            outputStream.write(bytes);
             outputStream.flush();
 
         } catch (FileNotFoundException e) {
