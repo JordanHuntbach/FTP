@@ -22,7 +22,7 @@ public class Client {
                 // "Prompt user for operation" state.
                 Scanner reader = new Scanner(System.in);
                 System.out.print("\nEnter Operation: ");
-                String operation = reader.nextLine();
+                String operation = reader.nextLine().toUpperCase();
 
                 if (operation.equals("CONN")) {
                     // Attempts connection to server, if not already connected.
@@ -260,7 +260,6 @@ public class Client {
             FileOutputStream out = new FileOutputStream("./src/Client/Files/" + filename);
             out.write(bytes);
             out.close();
-
         }
     }
 }
