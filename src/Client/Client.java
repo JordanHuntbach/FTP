@@ -3,28 +3,20 @@ package Client;
 import java.io.*;
 import java.net.*;
 import java.util.ArrayList;
+import java.util.InputMismatchException;
 import java.util.Scanner;
 
 public class Client {
-    private static int port = 2121;
+    private int port = 2121;
+    private String host = "localhost";
 
     public static void main(String[] args) {
         Client client = new Client();
-
-        // Client attempts initial connection to server.
-        Socket socket = null;
-        try {
-            System.out.println("Connecting to server...");
-            socket = new Socket("localhost", port);
-            System.out.println("Connected.");
-        } catch (IOException e) {
-            System.out.println("Connection failed. Please try again.");
-        }
-
-        client.waitForInput(socket);
+        client.waitForInput();
     }
 
-    private void waitForInput(Socket socket) {
+    private void waitForInput() {
+        Socket socket = null;
         while (true) {
             try {
                 // "Prompt user for operation" state.
@@ -35,12 +27,12 @@ public class Client {
                 if (operation.equals("CONN")) {
                     // Attempts connection to server, if not already connected.
                     if (socket == null || socket.isClosed()) {
-                        System.out.println("Connecting to server...");
                         try {
-                            socket = new Socket("localhost", port);
-                            System.out.println("Connected.");
-                        } catch (ConnectException e) {
-                            System.out.println("Connection failed. Please try again.");
+                            socket = connect(reader);
+                        } catch (InputMismatchException e) {
+                            System.out.println("Invalid input. Please try again.");
+                        } catch (IOException | IllegalArgumentException e) {
+                            System.out.println("Cannot connect to " + host + ":" + port);
                         }
                     } else {
                         System.out.println("Already connected to a server.");
@@ -107,6 +99,16 @@ public class Client {
         }
     }
 
+    private Socket connect(Scanner reader) throws InputMismatchException, IOException {
+        System.out.print("Enter server address: ");
+        host = reader.nextLine();
+        System.out.print("Enter port number: ");
+        port = reader.nextInt();
+        Socket socket = new Socket(host, port);
+        System.out.println("Connected.");
+        return socket;
+    }
+
     private void list(DataInputStream inputStream) throws IOException {
         // Client receives the size of the directory listing..
         int size = inputStream.readInt();
@@ -170,8 +172,8 @@ public class Client {
         String filename = reader.nextLine();
 
         try {
-            // This throws and exception if the file does not exist.
-            FileInputStream in = new FileInputStream("./src/Client/" + filename);
+            // This throws an exception if the file does not exist.
+            FileInputStream in = new FileInputStream("./src/Client/Files/" + filename);
 
             // Client sends the length of the file name which will be sent (short int)..
             short length = (short) filename.length();
@@ -257,7 +259,7 @@ public class Client {
             System.out.println(results);
 
             // The client saves the file to disk as "file name".
-            FileOutputStream out = new FileOutputStream("./src/Client/" + filename);
+            FileOutputStream out = new FileOutputStream("./src/Client/Files/" + filename);
             for (int num : bytes) {
                 out.write(num);
             }

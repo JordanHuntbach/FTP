@@ -3,8 +3,10 @@ package Server;
 import java.io.*;
 import java.net.*;
 import java.util.ArrayList;
+import java.util.Scanner;
 
 public class Server {
+    private int port = 2121;
 
     public static void main(String[] args){
         Server server = new Server();
@@ -14,10 +16,11 @@ public class Server {
     private void waitForConnection() {
         // Sets up socket.
         ServerSocket serverSocket;
+        getPort();
         while (true) {
             try {
                 // "Wait for connection" state.
-                serverSocket = new ServerSocket(2121);
+                serverSocket = new ServerSocket(port);
                 System.out.println("Waiting for connection...");
                 Socket socket = serverSocket.accept();
                 System.out.println("Connection established.");
@@ -65,9 +68,28 @@ public class Server {
                     }
                 }
             } catch (BindException e) {
+                System.out.print("There is an error connecting to port: " + port);
+                System.out.print("Please restart the server.");
                 break;
             } catch (IOException e) {
                 e.printStackTrace();
+            }
+        }
+    }
+
+    private void getPort() {
+        while (true) {
+            Scanner reader = new Scanner(System.in);
+            System.out.print("\nPort to listen on: ");
+            String input = reader.nextLine();
+            port = Integer.valueOf(input);
+            try {
+                ServerSocket serverSocket = new ServerSocket(port);
+                System.out.print("Connected to port: " + port + "\n");
+                serverSocket.close();
+                return;
+            } catch (IOException e) {
+                System.out.print("Cannot bind to port number: " + port);
             }
         }
     }
@@ -81,7 +103,7 @@ public class Server {
         }
 
         // ..and checks to see if the file exists in its local directory.
-        File file = new File("./src/Server/" + filename);
+        File file = new File("./src/Server/Files/" + filename);
         if (file.exists()) {
             // If the file exists, the server sends a positive confirm (integer value 1) back to the client.
             System.out.println("File " + filename + " exists.");
@@ -119,7 +141,7 @@ public class Server {
 
     private void list(DataOutputStream outputStream) throws IOException {
         // Server obtains listing of it’s directories/files.
-        File folder = new File("./src/Server/");
+        File folder = new File("./src/Server/Files/");
         File[] listOfFiles = folder.listFiles();
         assert listOfFiles != null;
 
@@ -175,7 +197,7 @@ public class Server {
         outputStream.flush();
 
         // Write the file to disk.
-        FileOutputStream out = new FileOutputStream("./src/Server/" + filename);
+        FileOutputStream out = new FileOutputStream("./src/Server/Files/" + filename);
         for (int num : bytes) {
             out.write(num);
         }
@@ -193,7 +215,7 @@ public class Server {
         }
         try {
             // ..and checks to see if the file exists in its local directory.
-            FileInputStream in = new FileInputStream("./src/Server/" + filename);
+            FileInputStream in = new FileInputStream("./src/Server/Files/" + filename);
 
             System.out.println("Sending File: " + filename);
 
